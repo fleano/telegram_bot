@@ -1,0 +1,2 @@
+python-telegram-bot==13.1
+libdw==4.3.0  
