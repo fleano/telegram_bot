@@ -1,41 +1,84 @@
+from IPython.display import clear_output
+from random import randint
 from telegram.ext import updater
 import Constants as keys
 from telegram.ext import *
 import Responses as R
-from libdw import pyrebase
+
 
 print('Bot started...')
 
-projectid = "myctdproject-f34ea-default-rtdb.asia-southeast1"
-dburl = "https://" + projectid + ".firebasedatabase.app"
-authdomain = projectid + ".firebaseapp.com"
-apikey = "AIzaSyBeAz9pXS01ryw2B_u-WeusKigtnrL77_g"
-email = "justinlooijw@gmail.com"
-password = "test012"
+# import necessary functions
 
-config = {
-    "apiKey": apikey,
-    "authDomain": authdomain,
-    "databaseURL": dburl,
-}
+# create the blackjack class, which will hold all game methods and attributes
 
-firebase = pyrebase.initialize_app(config)
-auth = firebase.auth()
-user = auth.sign_in_with_email_and_password(email, password)
-db = firebase.database()
-user = auth.refresh(user['refreshToken'])
 
-key = 'telegramBot'
+class Blackjack():
+    def __init__(self):
+        self.deck = []    # set to an empty list
+        self.suits = ("♠️", "❤️", "♦️", "♣️")
+        self.values = (2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K', 'A')
+
+    # create a method that creates a deck of 52 cards, each card should be a tuple with a value and suit
+    def makeDeck(self):
+        for suit in self.suits:
+            for value in self.values:
+                self.deck.append((value, suit))   # ex: (7, "Hearts")
+
+    # method to pop a card from deck using a random index value
+    def pullCard(self):
+        return self.deck.pop(randint(0, len(self.deck) - 1))
+
+# create a class for the dealer and player objects
+
+
+class Player():
+    def __init__(self, name):
+        self.name = name
+        self.hand = []
+
+    # take in a tuple and append it to the hand
+    def addCard(self, card):
+        self.hand.append(card)
+
+    # if not dealer's turn, then only show one of his cards, otherwise show all cards
+    def showHand(self):
+
+        intro = "\n{}\n===========".format(self.name)
+        cards = []
+        for i in range(len(self.hand)):
+
+            card = self.hand[i]
+            card_list_item = "{} of {}".format(card[0], card[1])
+            cards.append(card_list_item)
+
+        return intro, cards
+
+
+def play_game(name):
+    game = Blackjack()
+
+    game.makeDeck()
+
+    player = Player(name)
+
+    # add two cards to the dealer and player hand
+    for i in range(5):
+        player.addCard(game.pullCard())
+
+    # show both hands using method
+    return player.showHand()
 
 
 def start_command(update, context):
     update.message.reply_text(
-        "Hello! I am Justin's first bot. I was created to quickly give out information about SUTD Modelling Space and Systems Module")
+        "Hello! I am Justin's first bot. I was created to play poker with you!")
 
 
 def help_command(update, context):
     update.message.reply_text(
-        'If you need help! You should ask for it on Google! You can also go to this url: https://www.sutd.edu.sg/Admissions/Undergraduate/Unique-Curriculum/Freshmore-Subjects/Modelling-Space-and-Systems')
+        'If you need help, just play poker!\nCheat sheet url: https://texasholdemquestions.com/poker-cheat-sheet-for-2020/')
+    update.message.reply_photo('')
 
 
 def say_command(update, context):
@@ -44,19 +87,15 @@ def say_command(update, context):
     update.message.reply_text(text)
 
 
-def store_command(update, context):
-    text = str(update.message.text)
-    text = text.replace('/store', '')
-    if type(text) == str:
-        db.child(key).set(text, user['idToken'])
-        update.message.reply_text('Command completed')
+def play_command(update, context):
+    name = str(update.message.text)
+    name = name.replace('/play', '')
+    intro, cards = play_game(name)
+    text = intro
 
-
-def get_command(update, context):
-    node = db.child(key).get(user['idToken'])
-    value = node.val()
-    if type(value) == str:
-        update.message.reply_text(value)
+    for i in cards:
+        text += '\n' + i
+    update.message.reply_text(text)
 
 
 def handle_message(update, context):
@@ -77,8 +116,8 @@ def main():
     dp.add_handler(CommandHandler("start", start_command))
     dp.add_handler(CommandHandler("help", help_command))
     dp.add_handler(CommandHandler('say', say_command))
-    dp.add_handler(CommandHandler('store', store_command))
-    dp.add_handler(CommandHandler('get', get_command))
+    dp.add_handler(CommandHandler('play', play_command))
+
     dp.add_handler(MessageHandler(Filters.text, handle_message))
 
     dp.add_error_handler(error)
