@@ -1,14 +1,12 @@
-from IPython.display import clear_output
 from random import randint
-from telegram.ext import updater
 import Constants as keys
 from telegram.ext import *
 import Responses as R
 
+# import necessary functions
 
 print('Bot started...')
 
-# import necessary functions
 
 # create the blackjack class, which will hold all game methods and attributes
 
